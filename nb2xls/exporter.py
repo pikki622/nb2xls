@@ -114,7 +114,9 @@ class XLSExporter(Exporter):
                 self._write_code(cell)
 
             else:
-                self._write_textplain('No convertible outputs available for cell: {}'.format(cell.source))
+                self._write_textplain(
+                    f'No convertible outputs available for cell: {cell.source}'
+                )
 
             self.row += 1
 
@@ -131,9 +133,9 @@ class XLSExporter(Exporter):
         :return:
         """
 
+        display_data = None
         for i,o in enumerate(cell.outputs):
 
-            display_data = None
             if o.output_type in ('execute_result', 'display_data'):
                 if 'text/html' in o.data:
                     self._write_texthtml(o.data['text/html'])
@@ -149,7 +151,9 @@ class XLSExporter(Exporter):
                 elif 'text/plain' in o.data:
                     self._write_textplain(o.data['text/plain'])
                 else:
-                    self._write_textplain('No convertible mimetype available for source (output {}): {}'.format(i, cell.source))
+                    self._write_textplain(
+                        f'No convertible mimetype available for source (output {i}): {cell.source}'
+                    )
 
             elif o.output_type == 'stream':
                 self._write_textplain(o.text)
@@ -186,10 +190,10 @@ class XLSExporter(Exporter):
                     # Write accumulated string first
                     re.sub(r'\s+', ' ', s)
                     s = s.strip()
-                    if len(s) > 0:
-                        self.worksheet.write(self.row, 1, s.strip())
-                        self.row += 1
-                        s = ''
+                if len(s) > 0:
+                    self.worksheet.write(self.row, 1, s.strip())
+                    self.row += 1
+                    s = ''
 
                 if child.name in ('div', 'body', 'span', 'p'):
                     self._write_soup(child)
@@ -203,32 +207,31 @@ class XLSExporter(Exporter):
         for tablerow in soup('tr'):
             col = 1
             for child in tablerow.children:
-                if isinstance(child, Tag):
-                    if child.name == 'th' or child.name == 'td':
-                        while rowspans[col] > 1:
-                            rowspans[col] -= 1
-                            col += 1
-
-                        s = child.get_text()
-
-                        fmt = double_emphasis_fmt if child.name == 'th' else None
-
-                        try:
-                            f = float(s)
-                            if isnan(f):
-                                self.worksheet.write_formula(self.row, col, '=NA()', fmt)
-                            else:
-                                self.worksheet.write_number(self.row, col, f, fmt)
-                        except ValueError:
-                            self.worksheet.write(self.row, col, s, fmt)
-
-                        if 'rowspan' in child.attrs and child.attrs['rowspan'].isdigit():
-                            rowspans[col] = int(child.attrs['rowspan'])
-
-                        if 'colspan' in child.attrs and child.attrs['colspan'].isdigit():
-                            col += int(child.attrs['colspan'])-1
-
+                if isinstance(child, Tag) and child.name in ['th', 'td']:
+                    while rowspans[col] > 1:
+                        rowspans[col] -= 1
                         col += 1
+
+                    s = child.get_text()
+
+                    fmt = double_emphasis_fmt if child.name == 'th' else None
+
+                    try:
+                        f = float(s)
+                        if isnan(f):
+                            self.worksheet.write_formula(self.row, col, '=NA()', fmt)
+                        else:
+                            self.worksheet.write_number(self.row, col, f, fmt)
+                    except ValueError:
+                        self.worksheet.write(self.row, col, s, fmt)
+
+                    if 'rowspan' in child.attrs and child.attrs['rowspan'].isdigit():
+                        rowspans[col] = int(child.attrs['rowspan'])
+
+                    if 'colspan' in child.attrs and child.attrs['colspan'].isdigit():
+                        col += int(child.attrs['colspan'])-1
+
+                    col += 1
             self.row += 1
 
     # Image handler
@@ -286,8 +289,7 @@ class XLSExporter(Exporter):
             """
             for el in l:
                 if isinstance(el, Iterable) and not isinstance(el, str):
-                    for sub in flatten(el):
-                        yield sub
+                    yield from flatten(el)
                 else:
                     yield el
 
@@ -403,7 +405,7 @@ class XLSExporter(Exporter):
                     if isinstance(o[0], xlsxwriter.format.Format) and not isinstance(o[1], xlsxwriter.format.Format):
                         self.worksheet.write(self.row, 1+is_indented, o[1], o[0])
                     elif not isinstance(o[0], xlsxwriter.format.Format) and not isinstance(o[1], xlsxwriter.format.Format):
-                        self.worksheet.write(self.row, 1+is_indented, o[0] + ' ' + o[1])
+                        self.worksheet.write(self.row, 1+is_indented, f'{o[0]} {o[1]}')
                     else:
                         self.worksheet.write(self.row, 1+is_indented, o[0], o[1])
                 elif len(o) == 1 and not isinstance(o[0], xlsxwriter.format.Format):

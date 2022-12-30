@@ -11,8 +11,12 @@ class MdStyleInstruction(object):
         self.mdname = mdname
 
     def __repr__(self):
-        params = ['{}={}'.format(a, getattr(self,a)) for a in dir(self) if not a.startswith('__') and not callable(getattr(self,a))]
-        return '<{} {}>'.format(type(self), ", ".join(params))
+        params = [
+            f'{a}={getattr(self, a)}'
+            for a in dir(self)
+            if not a.startswith('__') and not callable(getattr(self, a))
+        ]
+        return f'<{type(self)} {", ".join(params)}>'
 
 
 class MdStyleInstructionCell(MdStyleInstruction):
@@ -101,11 +105,9 @@ class Md2XLSRenderer(Renderer):
         :param html: text content of the html snippet.
         """
         if self.options.get('skip_style') and \
-                html.lower().startswith('<style'):
+                    html.lower().startswith('<style'):
             return ['']
-        if self.options.get('escape'):
-            return [escape(html)]
-        return [html]
+        return [escape(html)] if self.options.get('escape') else [html]
 
     def header(self, text, level, raw=None):
         """Rendering header/heading tags like ``<h1>`` ``<h2>``.
@@ -113,7 +115,7 @@ class Md2XLSRenderer(Renderer):
         :param level: a number for the header level, for example: 1.
         :param raw: raw text content of the header.
         """
-        return [[MdStyleInstructionCell('h{}'.format(level))] + text]
+        return [[MdStyleInstructionCell(f'h{level}')] + text]
 
     def hrule(self):
         """Rendering method for ``<hr>`` tag."""
@@ -176,7 +178,7 @@ class Md2XLSRenderer(Renderer):
         :param text: text content for inline code.
         """
         if isinstance(text, str):
-            text = [' {} '.format(text)]
+            text = [f' {text} ']
         return [MdStyleInstructionText('codespan')] + text
 
     def linebreak(self):
@@ -209,7 +211,7 @@ class Md2XLSRenderer(Renderer):
         """
         text = link = escape_link(link)
         if is_email:
-            link = 'mailto:%s' % link
+            link = f'mailto:{link}'
         return [MdStyleInstructionLink(link)] + text
 
     def link(self, link, title, text):
@@ -231,20 +233,16 @@ class Md2XLSRenderer(Renderer):
         text = escape(text, quote=True)
         if title:
             title = escape(title, quote=True)
-            html = '<img src="%s" alt="%s" title="%s"' % (src, text, title)
+            html = f'<img src="{src}" alt="{text}" title="{title}"'
         else:
-            html = '<img src="%s" alt="%s"' % (src, text)
-        if self.options.get('use_xhtml'):
-            return '%s />' % html
-        return '%s>' % html
+            html = f'<img src="{src}" alt="{text}"'
+        return f'{html} />' if self.options.get('use_xhtml') else f'{html}>'
 
     def inline_html(self, html):
         """Rendering span level pure html content.
         :param html: text content of the html snippet.
         """
-        if self.options.get('escape'):
-            return [escape(html)]
-        return [html]
+        return [escape(html)] if self.options.get('escape') else [html]
 
     def newline(self):
         """Rendering newline element."""
@@ -255,27 +253,23 @@ class Md2XLSRenderer(Renderer):
         :param key: identity key for the footnote.
         :param index: the index count of current footnote.
         """
-        html = (
-                   '<sup class="footnote-ref" id="fnref-%s">'
-                   '<a href="#fn-%s">%d</a></sup>'
-               ) % (escape(key), escape(key), index)
-        return html
+        return (
+            '<sup class="footnote-ref" id="fnref-%s">'
+            '<a href="#fn-%s">%d</a></sup>'
+        ) % (escape(key), escape(key), index)
 
     def footnote_item(self, key, text):
         """Rendering a footnote item.
         :param key: identity key for the footnote.
         :param text: text content of the footnote.
         """
-        back = (
-                   '<a href="#fnref-%s" class="footnote">&#8617;</a>'
-               ) % escape(key)
+        back = f'<a href="#fnref-{escape(key)}" class="footnote">&#8617;</a>'
         text = text.rstrip()
         if text.endswith('</p>'):
-            text = re.sub(r'<\/p>$', r'%s</p>' % back, text)
+            text = re.sub(r'<\/p>$', f'{back}</p>', text)
         else:
-            text = '%s<p>%s</p>' % (text, back)
-        html = '<li id="fn-%s">%s</li>\n' % (escape(key), text)
-        return html
+            text = f'{text}<p>{back}</p>'
+        return '<li id="fn-%s">%s</li>\n' % (escape(key), text)
 
     def footnotes(self, text):
         """Wrapper for all footnotes.

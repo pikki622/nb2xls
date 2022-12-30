@@ -7,8 +7,7 @@ def _get_version(version_info):
            'final': ''}
     vi = version_info
     specifier = '' if vi[3] == 'final' else dic[vi[3]] + str(vi[4])
-    version = '%s.%s.%s%s' % (vi[0], vi[1], vi[2], specifier)
-    return version
+    return f'{vi[0]}.{vi[1]}.{vi[2]}{specifier}'
 
 
 # meta data - change alpha/dev to final for release

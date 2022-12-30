@@ -19,9 +19,10 @@ class Difference(object):
             self.__dict__[k] = v
 
     def __repr__(self):
-        return u'%s: {%s}' % (self.__class__.__name__,
-                              u', '.join([k + ': ' + repr(self.__dict__[k])
-                                          for k in self.__slots__]))
+        return u'%s: {%s}' % (
+            self.__class__.__name__,
+            u', '.join([f'{k}: {repr(self.__dict__[k])}' for k in self.__slots__]),
+        )
 
 
 class MissingWorksheet(Difference):
@@ -60,19 +61,20 @@ def diff(ref, other, ignores=(), precision=None, typeless=False):
     wb2_sheets = set(wb2.sheetnames)
 
     wb_differences = []
-    if not MissingWorksheet in ignores:
-        for sh in (wb1_sheets - wb2_sheets):
-            wb_differences.append(MissingWorksheet(worksheet=sh,
-                                                   missing_in='reference'))
-
-        for sh in (wb2_sheets - wb1_sheets):
-            wb_differences.append(MissingWorksheet(worksheet=sh,
-                                                   missing_in='other'))
-
+    if MissingWorksheet not in ignores:
+        wb_differences.extend(
+            MissingWorksheet(worksheet=sh, missing_in='reference')
+            for sh in (wb1_sheets - wb2_sheets)
+        )
+        wb_differences.extend(
+            MissingWorksheet(worksheet=sh, missing_in='other')
+            for sh in (wb2_sheets - wb1_sheets)
+        )
     sheet_differences = {}
     for sh in (wb1_sheets & wb2_sheets):
-        changes = sheet_changes(wb1, wb2, sh, ignores, precision, typeless)
-        if changes:
+        if changes := sheet_changes(
+            wb1, wb2, sh, ignores, precision, typeless
+        ):
             sheet_differences[sh] = changes
 
     return wb_differences, sheet_differences
@@ -88,18 +90,26 @@ def sheet_changes(wb1, wb2, sheet_name, ignores, precision, typeless):
     for r1, r2 in zip_longest(sheet1.rows, sheet2.rows):
         if r1 is None:
             if miss:
-                for cell in r2:
-                    if not empty(cell):
-                        diffs.append(MissingCell(worksheet=sheet_name,
-                                                 coordinate=cell.coordinate,
-                                                 missing_in='reference'))
+                diffs.extend(
+                    MissingCell(
+                        worksheet=sheet_name,
+                        coordinate=cell.coordinate,
+                        missing_in='reference',
+                    )
+                    for cell in r2
+                    if not empty(cell)
+                )
         elif r2 is None:
             if miss:
-                for cell in r1:
-                    if not empty(cell):
-                        diffs.append(MissingCell(worksheet=sheet_name,
-                                                 coordinate=cell.coordinate,
-                                                 missing_in='other'))
+                diffs.extend(
+                    MissingCell(
+                        worksheet=sheet_name,
+                        coordinate=cell.coordinate,
+                        missing_in='other',
+                    )
+                    for cell in r1
+                    if not empty(cell)
+                )
         else:
             for c1, c2 in zip_longest(r1, r2):
                 if empty(c1) and empty(c2):
@@ -123,13 +133,17 @@ def sheet_changes(wb1, wb2, sheet_name, ignores, precision, typeless):
                                 v1, v2 = float(v1), float(v2)
                             except:
                                 pass
-                        if isinstance(v1, float) and isinstance(v2, float):
-                            if precision is not None:
-                                if abs(v1 - v2) < precision:
-                                    continue
-                            else:
-                                if v1 == v2:
-                                    continue
+                        if (
+                            isinstance(v1, float)
+                            and isinstance(v2, float)
+                            and (
+                                precision is not None
+                                and abs(v1 - v2) < precision
+                                or precision is None
+                                and v1 == v2
+                            )
+                        ):
+                            continue
                         diffs.append(CellDifference(worksheet=sheet_name,
                                                     coordinate=c1.coordinate,
                                                     kind='value',
@@ -140,9 +154,7 @@ def sheet_changes(wb1, wb2, sheet_name, ignores, precision, typeless):
 
 
 def empty(cell):
-    if cell and not cell.value is None:
-        return False
-    return True
+    return not cell or cell.value is None
 
 
 def klass(x):

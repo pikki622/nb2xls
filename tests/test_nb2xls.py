@@ -74,11 +74,11 @@ class TestsExcelExporter(LocalExportersTestsBase):
 
         with self.create_temp_cwd() as temp_cwd:
 
-            other_fn = os.path.join(temp_cwd, ipynb_filename+'.xlsx')
+            other_fn = os.path.join(temp_cwd, f'{ipynb_filename}.xlsx')
             with open(other_fn, "wb") as f:
                 f.write(other)
 
-            ref_fn = self._get_notebook(ipynb_filename)+'.xlsx'
+            ref_fn = f'{self._get_notebook(ipynb_filename)}.xlsx'
 
             wb_diff, sheet_diffs = diff(ref_fn, other_fn)
 

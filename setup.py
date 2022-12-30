@@ -5,7 +5,7 @@ module = 'nb2xls'
 
 # get version from __meta__
 meta_ns = {}
-path = convert_path(module+'/__meta__.py')
+path = convert_path(f'{module}/__meta__.py')
 with open(path) as meta_file:
     exec(meta_file.read(), meta_ns)
 
@@ -26,11 +26,8 @@ long_description = 'Export Jupyter notebook as an Excel xls file.'
 author = 'ideonate'
 author_email = 'dan@ideonate.com'
 # github template
-url = 'https://github.com/{}/{}'.format(author,
-                                        name_url)
-download_url = 'https://github.com/{}/{}/tarball/{}'.format(author,
-                                                            name_url,
-                                                            version)
+url = f'https://github.com/{author}/{name_url}'
+download_url = f'https://github.com/{author}/{name_url}/tarball/{version}'
 keywords = ['jupyter',
             'nbconvert',
             ]

@@ -24,7 +24,7 @@ class MdXlsStyleRegistry(object):
 
         mdname = '-'.join(mdnames)
 
-        if not mdname in self.stylereg:
+        if mdname not in self.stylereg:
 
             style = self._create_style(mdnames)
 
@@ -41,7 +41,4 @@ class MdXlsStyleRegistry(object):
             if submdname in self.default_formats:
                 d = {**d, **self.default_formats[submdname]}
 
-        if len(d) > 0:
-            return self.workbook.add_format(d)
-
-        return ''
+        return self.workbook.add_format(d) if len(d) > 0 else ''

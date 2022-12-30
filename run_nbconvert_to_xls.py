@@ -19,5 +19,5 @@ xlsexporter.ignore_markdown_errors = False
 body,resources = xlsexporter.from_notebook_node(json_nb)
 
 
-with open(fn+'.xlsx', "wb") as f:
+with open(f'{fn}.xlsx', "wb") as f:
     f.write(body)
